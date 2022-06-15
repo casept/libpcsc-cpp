@@ -32,12 +32,12 @@ target_compile_features(${PROJECT_NAME}
   cxx_std_17
 )
 
-target_compile_options(${PROJECT_NAME} PUBLIC
+target_compile_options(${PROJECT_NAME} PRIVATE
   $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
   $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -pedantic -Werror>
 )
 
-target_compile_definitions(${PROJECT_NAME} PUBLIC
+target_compile_definitions(${PROJECT_NAME} PRIVATE
   $<$<CXX_COMPILER_ID:MSVC>:WIN32_LEAN_AND_MEAN;UNICODE>
 )
 
@@ -46,56 +46,14 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 )
 
 # PC/SC API dependencies.
-
-add_library(pcsc INTERFACE)
-if(MSVC)
+if(WIN32)
   # no extra includes required
-  target_link_libraries(pcsc INTERFACE winscard)
+  target_link_libraries(${PROJECT_NAME} PRIVATE winscard)
 elseif(APPLE)
   # no extra includes required
-  target_link_libraries(pcsc INTERFACE "-framework PCSC")
+  target_link_libraries(${PROJECT_NAME} PRIVATE "-framework PCSC")
 else()
   find_package(PkgConfig REQUIRED)
-  pkg_check_modules(PCSC libpcsclite REQUIRED)
-  target_include_directories(${PROJECT_NAME} PRIVATE ${PCSC_INCLUDE_DIRS})
-  target_link_libraries(pcsc INTERFACE ${PCSC_LIBRARIES})
+  pkg_check_modules(PCSC libpcsclite REQUIRED IMPORTED_TARGET)
+  target_link_libraries(${PROJECT_NAME} PRIVATE PkgConfig::PCSC)
 endif()
-
-# Common testing options.
-
-enable_testing()
-
-find_package(GTest REQUIRED)
-
-# Mock tests that use libpcsc-mock to mock PC/SC API calls.
-
-set(MOCK_TEST_EXE lib${PROJECT_NAME}-test-mock)
-
-add_subdirectory(tests/lib/libpcsc-mock)
-
-add_executable(${MOCK_TEST_EXE}
-  tests/mock/test-select-card-reader-and-card.cpp
-  tests/mock/test-connect-to-card-transmit-apdus.cpp
-)
-
-target_link_libraries(${MOCK_TEST_EXE}
-  ${PROJECT_NAME}
-  pcsc-mock
-  GTest::Main
-)
-
-add_test(${MOCK_TEST_EXE} ${MOCK_TEST_EXE})
-
-# Integration tests that use the real operating system PC/SC service.
-
-set(INTEGRATION_TEST_EXE lib${PROJECT_NAME}-test-integration)
-
-add_executable(${INTEGRATION_TEST_EXE}
-  tests/integration/test-${PROJECT_NAME}.cpp
-)
-
-target_link_libraries(${INTEGRATION_TEST_EXE}
-  ${PROJECT_NAME}
-  pcsc
-  GTest::Main
-)
