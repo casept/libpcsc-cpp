@@ -32,7 +32,17 @@ namespace pcsc_cpp
 {
 
 using byte_vector = std::vector<unsigned char>;
+
+// By default, mingw doesn't seem to use wide APIs.
+// While it may be wise to enable them project-wide, I'm not sure of the impacts.
+// Therefore, leave disabled and use narrow strings here.
 #ifdef _WIN32
+#ifndef __MINGW32__
+#define _WIDE_STRINGS
+#endif
+#endif
+
+#ifdef _WIDE_STRINGS
 using string_t = std::wstring;
 #else
 using string_t = std::string;

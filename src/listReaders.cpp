@@ -50,7 +50,7 @@ std::vector<const string_t::value_type*> getReaderNamePointerList(const string_t
         return readerNamePointerList;
 
         // Reader names are \0 separated and end with double \0.
-#ifdef _WIN32
+#ifdef _WIDE_STRINGS
     for (const string_t::value_type* name = readerNames.c_str(); *name; name += wcslen(name) + 1) {
 #else
     for (const string_t::value_type* name = readerNames.c_str(); *name; name += strlen(name) + 1) {

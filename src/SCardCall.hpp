@@ -32,6 +32,13 @@
 #include <winerror.h>
 #endif // _WIN32
 
+// Needed to compile successfully on Win32,
+// due to differing signedness of HRESULT.
+// Not a clean fix, but a workaround.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wnarrowing"
+
+
 namespace pcsc_cpp
 {
 
@@ -89,6 +96,8 @@ void SCardCall(const char* callerFunctionName, const char* file, int line,
 }
 
 } // namespace pcsc_cpp
+
+#pragma GCC diagnostic pop
 
 #define SCard(APIFunctionName, ...)                                                                \
     SCardCall(__FUNCTION__, __FILE__, __LINE__, "SCard" #APIFunctionName, SCard##APIFunctionName,  \

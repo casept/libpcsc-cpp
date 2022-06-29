@@ -25,12 +25,6 @@
 #include "Context.hpp"
 #include "pcsc-cpp/comp_winscard.hpp"
 
-#ifdef _WIN32
-#include <Winsock2.h>
-#elif !defined(__APPLE__)
-#include <arpa/inet.h>
-#endif
-
 #include <map>
 #include <utility>
 
@@ -69,6 +63,16 @@ std::pair<SCARDHANDLE, DWORD> connectToCard(const SCARDCONTEXT ctx, const string
 
 } // namespace
 
+static unsigned long be_ulong_to_ne(unsigned long x) {
+	int n = 1;
+// little endian if true
+if(*(char *)&n == 1) {
+	return (x >> 24) | ((x<<8) & 0x00FF0000) | ((x>>8) & 0x0000FF00) | (x<< 24);
+} else {
+	return x;
+}
+}
+
 namespace pcsc_cpp
 {
 
@@ -90,7 +94,7 @@ public:
                 unsigned int value = 0;
                 for (unsigned int i = 0; i < len; ++i)
                     value |= *p++ << 8 * i;
-                features[DRIVER_FEATURES(tag)] = ntohl(value);
+                features[DRIVER_FEATURES(tag)] = be_ulong_to_ne(value);
             }
         } catch (const ScardError&) {
             // Ignore driver errors during card feature requests.
