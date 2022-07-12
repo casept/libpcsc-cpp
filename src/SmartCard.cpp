@@ -26,7 +26,9 @@
 #include "pcsc-cpp/comp_winscard.hpp"
 
 #include <map>
+#include <stdexcept>
 #include <utility>
+#include <cstdint>
 
 // TODO: Someday, maybe SCARD_SHARE_SHARED vs SCARD_SHARE_EXCLUSIVE and SCARD_RESET_CARD on
 // disconnect if SCARD_SHARE_EXCLUSIVE, SCARD_LEAVE_CARD otherwise.
@@ -63,14 +65,16 @@ std::pair<SCARDHANDLE, DWORD> connectToCard(const SCARDCONTEXT ctx, const string
 
 } // namespace
 
-static unsigned long be_ulong_to_ne(unsigned long x) {
-	int n = 1;
-// little endian if true
-if(*(char *)&n == 1) {
-	return (x >> 24) | ((x<<8) & 0x00FF0000) | ((x>>8) & 0x0000FF00) | (x<< 24);
-} else {
-	return x;
-}
+static std::uint32_t be_u32_to_ne(std::uint32_t x)
+{
+    int n = 1;
+    // little endian if true
+    // cppcheck-suppress knownConditionTrueFalse
+    if (*(char*)&n == 1) {
+        return ((((x) >> 24) & 0x000000FF) | (((x) >> 8) & 0x0000FF00) | (((x) << 8) & 0x00FF0000)
+                | (((x) << 24) & 0xFF000000));
+    }
+    return x;
 }
 
 namespace pcsc_cpp
@@ -94,7 +98,7 @@ public:
                 unsigned int value = 0;
                 for (unsigned int i = 0; i < len; ++i)
                     value |= *p++ << 8 * i;
-                features[DRIVER_FEATURES(tag)] = be_ulong_to_ne(value);
+                features[DRIVER_FEATURES(tag)] = be_u32_to_ne(value);
             }
         } catch (const ScardError&) {
             // Ignore driver errors during card feature requests.
